@@ -11,6 +11,13 @@ import argparse
 import requests
 from dotenv import load_dotenv
 
+# Ensure UTF-8 output on Windows consoles
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 # Load environment variables
 load_dotenv()
 
@@ -55,9 +62,9 @@ def get_headers():
 
 
 def create_agent():
-    """Create a new Bolna agent via API."""
+    """Create a new Bolna agent via V2 API."""
     payload = load_agent_payload()
-    url = f"{BOLNA_API_URL}/agent"
+    url = f"{BOLNA_API_URL}/v2/agent"
     print(f"Creating Bolna agent at {url}...")
 
     try:
@@ -77,15 +84,15 @@ def create_agent():
 
 
 def update_agent(agent_id: str):
-    """Update existing Bolna agent configuration."""
+    """Update existing Bolna agent configuration via V2 API."""
     payload = load_agent_payload()
-    url = f"{BOLNA_API_URL}/agent/{agent_id}"
+    url = f"{BOLNA_API_URL}/v2/agent/{agent_id}"
     print(f"Updating Bolna agent {agent_id} at {url}...")
 
     try:
         response = requests.put(url, headers=get_headers(), json=payload, timeout=20)
         print(f"Response [{response.status_code}]: {response.text}")
-        if response.status_code == 200:
+        if response.status_code in [200, 201]:
             print(f"\n[SUCCESS] Agent {agent_id} updated successfully!")
         else:
             print(f"[ERROR] Update failed.")
@@ -115,7 +122,7 @@ def trigger_outbound_call(agent_id: str, recipient_phone: str):
 
 def list_agents():
     """Lists all Bolna agents registered under this account."""
-    url = f"{BOLNA_API_URL}/agent"
+    url = f"{BOLNA_API_URL}/agent/all"
     print(f"Fetching agents from {url}...")
 
     try:
@@ -127,6 +134,24 @@ def list_agents():
             print(response.text)
     except Exception as e:
         print(f"[EXCEPTION] Failed to list agents: {e}")
+
+
+def check_account():
+    """Checks Bolna user account and wallet credits."""
+    url = f"{BOLNA_API_URL}/me"
+    print(f"Checking account at {url}...")
+    try:
+        response = requests.get(url, headers=get_headers(), timeout=15)
+        if response.status_code == 200:
+            data = response.json()
+            print("\n[ACCOUNT DETAILS]")
+            print(f"  User ID: {data.get('id')}")
+            print(f"  Email: {data.get('email')}")
+            print(f"  Wallet Credits: ${data.get('wallet')}")
+        else:
+            print(f"[ERROR] {response.status_code}: {response.text}")
+    except Exception as e:
+        print(f"[EXCEPTION]: {e}")
 
 
 def export_bundle():
@@ -141,7 +166,7 @@ def export_bundle():
 
 def main():
     parser = argparse.ArgumentParser(description="AarogyaVoice Bolna Agent Manager")
-    parser.add_argument("command", choices=["create", "update", "call", "list", "export"],
+    parser.add_argument("command", choices=["create", "update", "call", "list", "me", "export"],
                         help="Action to perform")
     parser.add_argument("--agent-id", help="Bolna Agent ID (optional if set in .env)")
     parser.add_argument("--phone", help="Recipient phone number (e.g. +919876543210) for call action")
@@ -167,6 +192,8 @@ def main():
         trigger_outbound_call(agent_id, args.phone)
     elif args.command == "list":
         list_agents()
+    elif args.command == "me":
+        check_account()
     elif args.command == "export":
         export_bundle()
 
