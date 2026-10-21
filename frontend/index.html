@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AarogyaVoice (आरोग्यVoice) — Autonomous Clinical Voice Receptionist & Triage</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+        <i class="fa-solid fa-stethoscope text-slate-950 text-xl"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="font-bold text-xl tracking-tight text-white">AarogyaVoice <span class="text-xs font-normal text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">Bolna Voice AI</span></h1>
+        </div>
+        <p class="text-xs text-slate-400">Sanjeevani Community Health Center • Indiranagar, Bengaluru</p>
+      </div>
+    </div>
+
+    <!-- Agent & System Status -->
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 text-xs font-medium">
+        <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        Voice Agent: Priya (Active)
+      </div>
+      <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-950/30 border border-red-500/30 text-red-400 text-xs font-medium">
+        <i class="fa-solid fa-truck-medical"></i> Ambulance: 108
+      </div>
+      <a href="https://github.com/lavyadav182" target="_blank" class="text-slate-400 hover:text-white transition text-sm flex items-center gap-1.5">
+        <i class="fa-brands fa-github text-lg"></i>
+        <span class="hidden sm:inline">lavyadav182</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+    <!-- KPI Statistics Grid -->
+    <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl shadow-sm">
+        <div class="flex items-center justify-between text-slate-400 text-xs uppercase font-semibold mb-2">
+          <span>Inbound Calls Handled</span>
+          <i class="fa-solid fa-phone-volume text-emerald-400"></i>
+        </div>
+        <div class="text-3xl font-extrabold text-white" id="stat-calls">142</div>
+        <p class="text-xs text-emerald-400 mt-1"><i class="fa-solid fa-arrow-up"></i> 100% Vernacular Calls Answered</p>
+      </div>
+
+      <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl shadow-sm">
+        <div class="flex items-center justify-between text-slate-400 text-xs uppercase font-semibold mb-2">
+          <span>Confirmed OPD Slots</span>
+          <i class="fa-solid fa-calendar-check text-blue-400"></i>
+        </div>
+        <div class="text-3xl font-extrabold text-white" id="stat-bookings">38</div>
+        <p class="text-xs text-blue-400 mt-1">Real-time Calendar Sync</p>
+      </div>
+
+      <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl shadow-sm">
+        <div class="flex items-center justify-between text-slate-400 text-xs uppercase font-semibold mb-2">
+          <span>Emergency Triage Intercepts</span>
+          <i class="fa-solid fa-triangle-exclamation text-rose-400"></i>
+        </div>
+        <div class="text-3xl font-extrabold text-rose-400" id="stat-emergencies">3</div>
+        <p class="text-xs text-slate-400 mt-1">Immediate 108 Ambulance Alerts</p>
+      </div>
+
+      <div class="bg-slate-900/80 border border-slate-800 p-5 rounded-2xl shadow-sm">
+        <div class="flex items-center justify-between text-slate-400 text-xs uppercase font-semibold mb-2">
+          <span>WhatsApp Slips Sent</span>
+          <i class="fa-brands fa-whatsapp text-emerald-400"></i>
+        </div>
+        <div class="text-3xl font-extrabold text-white" id="stat-whatsapp">38</div>
+        <p class="text-xs text-slate-400 mt-1">Vernacular Confirmation Tokens</p>
+      </div>
+    </section>
+
+    <!-- Interactive Grid: Voice Simulator & Clinic Live Desk -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+      <!-- Left Column: Interactive Voice Simulator Console (Judges & Live Testing) -->
+      <section class="lg:col-span-5 bg-gradient-to-b from-slate-900/90 to-slate-900/40 border border-slate-800 rounded-3xl p-6 shadow-xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+            <div>
+              <h2 class="font-bold text-lg text-white flex items-center gap-2">
+                <i class="fa-solid fa-microphone-lines text-emerald-400"></i>
+                Voice Agent Console
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">Test live phone conversation in Hindi, Hinglish, or English</p>
+            </div>
+            <button id="tts-toggle" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-full flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-volume-high text-emerald-400" id="tts-icon"></i>
+              <span id="tts-label">Voice Audio: ON</span>
+            </button>
+          </div>
+
+          <!-- Quick Test Scenarios -->
+          <div class="mt-4">
+            <span class="text-[11px] font-semibold tracking-wider text-slate-400 uppercase">One-Click Clinical Test Scenarios</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+              <button onclick="sendQuickPrompt('मेरे पिताजी की छाती में तेज दर्द हो रहा है और पसीना आ रहा है')" class="text-left text-xs bg-red-950/40 hover:bg-red-900/50 border border-red-500/30 text-red-200 p-2.5 rounded-xl transition flex items-center gap-2">
+                <i class="fa-solid fa-heart-pulse text-red-400"></i>
+                <span><b>🔴 Emergency:</b> Chest Pain & Sweating</span>
+              </button>
+              <button onclick="sendQuickPrompt('मेरे 4 साल के बच्चे को 3 दिन से 103 डिग्री बुखार है')" class="text-left text-xs bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/30 text-amber-200 p-2.5 rounded-xl transition flex items-center gap-2">
+                <i class="fa-solid fa-child text-amber-400"></i>
+                <span><b>🟡 Urgent:</b> Child High Fever (103°F)</span>
+              </button>
+              <button onclick="sendQuickPrompt('मुझे कल से थोड़ा जुकाम और खांसी है, डॉक्टर को दिखाना है')" class="text-left text-xs bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-500/30 text-emerald-200 p-2.5 rounded-xl transition flex items-center gap-2">
+                <i class="fa-solid fa-user-doctor text-emerald-400"></i>
+                <span><b>🟢 Routine:</b> Cold & Doctor Appointment</span>
+              </button>
+              <button onclick="sendQuickPrompt('क्लिनिक का समय क्या है और फीस कितनी लगती है?')" class="text-left text-xs bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-200 p-2.5 rounded-xl transition flex items-center gap-2">
+                <i class="fa-solid fa-circle-question text-blue-400"></i>
+                <span><b>📍 Inquire:</b> Timings & OPD Fees</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dialogue Transcript Area -->
+          <div id="chat-box" class="mt-4 h-72 overflow-y-auto space-y-3 p-4 rounded-2xl bg-slate-950/80 border border-slate-800/80 text-sm">
+            <div class="flex items-start gap-2.5 text-xs text-slate-400">
+              <div class="h-6 w-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <i class="fa-solid fa-robot text-xs"></i>
+              </div>
+              <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl rounded-tl-none text-slate-200 space-y-1">
+                <p>नमस्ते! संजीवनी हेल्थ क्लिनिक में आपका स्वागत है। मैं प्रिया बोल रही हूँ। मैं आज आपकी क्या मदद कर सकती हूँ?</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Audio Waveform Visualizer -->
+          <div id="waveform" class="h-8 flex items-center justify-center gap-1.5 my-3 hidden">
+            <div class="w-1 bg-emerald-400 rounded-full wave-bar"></div>
+            <div class="w-1 bg-emerald-400 rounded-full wave-bar"></div>
+            <div class="w-1 bg-emerald-400 rounded-full wave-bar"></div>
+            <div class="w-1 bg-emerald-400 rounded-full wave-bar"></div>
+            <div class="w-1 bg-emerald-400 rounded-full wave-bar"></div>
+            <span class="text-xs text-emerald-400 ml-2 font-mono">Agent Priya is speaking...</span>
+          </div>
+        </div>
+
+        <!-- Input Box -->
+        <form id="chat-form" class="mt-4 flex gap-2">
+          <input
+            id="chat-input"
+            type="text"
+            placeholder="Type patient response in Hindi, Hinglish or English..."
+            class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 transition"
+          />
+          <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-5 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+            <span>Send</span>
+            <i class="fa-solid fa-paper-plane text-xs"></i>
+          </button>
+        </form>
+      </section>
+
+      <!-- Right Column: Clinic Operations & Real-Time Queues -->
+      <section class="lg:col-span-7 space-y-6">
+
+        <!-- Live Confirmed OPD Appointments -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="font-bold text-lg text-white flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-list text-blue-400"></i>
+                Today's OPD Queue & Confirmed Tokens
+              </h2>
+              <p class="text-xs text-slate-400">Automatically booked via voice calls</p>
+            </div>
+            <button onclick="fetchAppointments()" class="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+              <i class="fa-solid fa-rotate-right"></i> Refresh
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-slate-400 border-b border-slate-800 uppercase font-semibold">
+                <tr>
+                  <th class="py-2.5 px-3">Token</th>
+                  <th class="py-2.5 px-3">Patient</th>
+                  <th class="py-2.5 px-3">Doctor & Dept</th>
+                  <th class="py-2.5 px-3">Slot Time</th>
+                  <th class="py-2.5 px-3">Triage</th>
+                  <th class="py-2.5 px-3">Status</th>
+                </tr>
+              </thead>
+              <tbody id="appointments-tbody" class="divide-y divide-slate-800/60 text-slate-300">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Call Recordings & Triage Transcripts -->
+        <div class="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="font-bold text-lg text-white flex items-center gap-2">
+                <i class="fa-solid fa-wave-square text-emerald-400"></i>
+                Recent Voice Calls & Transcripts
+              </h2>
+              <p class="text-xs text-slate-400">Logged via Bolna call-ended webhook</p>
+            </div>
+            <span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300">Live Sync</span>
+          </div>
+
+          <div id="call-logs-container" class="space-y-3">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+  <footer class="border-t border-slate-800/80 mt-12 py-6 text-center text-xs text-slate-500">
+    AarogyaVoice • Built with Voice at Symphony by Bolna • Developer: <a href="https://github.com/lavyadav182" class="text-emerald-400 hover:underline">lavyadav182</a>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

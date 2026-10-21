@@ -1,0 +1,189 @@
+{
+  "agent_config": {
+    "agent_name": "AarogyaVoice-Priya",
+    "agent_type": "other",
+    "agent_welcome_message": "नमस्ते! संजीवनी हेल्थ क्लिनिक में आपका स्वागत है। मैं प्रिया बोल रही हूँ। मैं आज आपकी या आपके परिवार की क्या मदद कर सकती हूँ?",
+    "tasks": [
+      {
+        "task_type": "conversation",
+        "toolchain": {
+          "execution": "parallel",
+          "pipelines": [
+            [
+              "transcriber",
+              "llm",
+              "synthesizer"
+            ]
+          ]
+        },
+        "tools_config": {
+          "input": {
+            "format": "wav",
+            "provider": "twilio"
+          },
+          "output": {
+            "format": "wav",
+            "provider": "twilio"
+          },
+          "transcriber": {
+            "provider": "deepgram",
+            "model": "nova-2",
+            "language": "hi",
+            "stream": true,
+            "smart_format": true,
+            "interim_results": true
+          },
+          "llm_agent": {
+            "agent_type": "simple_llm_agent",
+            "agent_flow_type": "streaming",
+            "llm_config": {
+              "provider": "openai",
+              "model": "gpt-4o-mini",
+              "temperature": 0.2,
+              "max_tokens": 150,
+              "request_json": false
+            }
+          },
+          "synthesizer": {
+            "provider": "cartesia",
+            "stream": true,
+            "audio_format": "wav",
+            "provider_config": {
+              "model_id": "sonic-multilingual",
+              "voice_id": "a0e99841-438c-4a64-b679-ae501e7d6091",
+              "language": "hi"
+            },
+            "buffer_size": 100.0
+          },
+          "api_tools": [
+            {
+              "name": "check_doctor_availability",
+              "description": "Checks available appointment slots for a given medical department or doctor on a specific date.",
+              "url": "http://localhost:8000/api/appointments/availability",
+              "method": "POST",
+              "param_schema": {
+                "type": "object",
+                "properties": {
+                  "department": {
+                    "type": "string",
+                    "description": "Department name: 'General Physician', 'Pediatrician', 'Orthopedic', or 'Gynecologist'",
+                    "enum": [
+                      "General Physician",
+                      "Pediatrician",
+                      "Orthopedic",
+                      "Gynecologist"
+                    ]
+                  },
+                  "date": {
+                    "type": "string",
+                    "description": "Date in YYYY-MM-DD format (defaults to 'today' if not specified)"
+                  }
+                },
+                "required": [
+                  "department"
+                ]
+              }
+            },
+            {
+              "name": "triage_symptoms",
+              "description": "Evaluates patient symptoms against clinical emergency protocols to determine RED, YELLOW, or GREEN severity level.",
+              "url": "http://localhost:8000/api/triage/evaluate",
+              "method": "POST",
+              "param_schema": {
+                "type": "object",
+                "properties": {
+                  "symptoms": {
+                    "type": "string",
+                    "description": "Full description of reported symptoms"
+                  },
+                  "duration_days": {
+                    "type": "integer",
+                    "description": "How many days the symptoms have lasted"
+                  },
+                  "patient_age": {
+                    "type": "integer",
+                    "description": "Age of the patient in years"
+                  }
+                },
+                "required": [
+                  "symptoms"
+                ]
+              }
+            },
+            {
+              "name": "book_appointment_slot",
+              "description": "Books a confirmed OPD slot and triggers an automated WhatsApp confirmation token with clinic address.",
+              "url": "http://localhost:8000/api/appointments/book",
+              "method": "POST",
+              "param_schema": {
+                "type": "object",
+                "properties": {
+                  "patient_name": {
+                    "type": "string",
+                    "description": "Full name of the patient"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "description": "Patient's 10-digit mobile number"
+                  },
+                  "department": {
+                    "type": "string",
+                    "description": "Medical specialty"
+                  },
+                  "slot_time": {
+                    "type": "string",
+                    "description": "Selected slot, e.g., '10:30 AM', '04:00 PM'"
+                  },
+                  "chief_complaint": {
+                    "type": "string",
+                    "description": "Primary symptoms or reason for visit"
+                  },
+                  "urgency_level": {
+                    "type": "string",
+                    "description": "Triage rating: 'EMERGENCY', 'URGENT', or 'ROUTINE'",
+                    "enum": [
+                      "EMERGENCY",
+                      "URGENT",
+                      "ROUTINE"
+                    ]
+                  }
+                },
+                "required": [
+                  "patient_name",
+                  "phone",
+                  "department",
+                  "slot_time"
+                ]
+              }
+            },
+            {
+              "name": "get_clinic_details",
+              "description": "Returns operational details of Sanjeevani Clinic such as timing, address, fees, and diagnostic facilities.",
+              "url": "http://localhost:8000/api/clinic/info",
+              "method": "GET",
+              "param_schema": {
+                "type": "object",
+                "properties": {
+                  "topic": {
+                    "type": "string",
+                    "description": "Topic of interest: 'timing', 'address', 'fees', or 'facilities'"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "task_config": {
+          "hangup_after_silence": 25.0,
+          "call_terminate": 600.0,
+          "webhook_url": "http://localhost:8000/api/webhooks/call-ended"
+        }
+      }
+    ]
+  },
+  "agent_prompts": {
+    "task_1": {
+      "system_prompt": "Included via bolna_manager.py from system_prompt.txt"
+    }
+  }
+}
