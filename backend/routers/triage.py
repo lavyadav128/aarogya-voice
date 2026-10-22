@@ -24,15 +24,28 @@ class TriageResponse(BaseModel):
     dispatch_ambulance: bool
 
 EMERGENCY_KEYWORDS = [
-    "chest pain", "chhati me dard", "heart", "attack", "dil", "saans lene me",
-    "breathless", "suffocation", "unconscious", "behosh", "stroke", "paralysis",
-    "bleeding heavily", "blood vomiting", "khun", "poison", "zehar", "head injury"
+    # English
+    "chest pain", "heart attack", "heart", "cardiac", "breathless", "shortness of breath",
+    "suffocation", "unconscious", "fainted", "fainting", "stroke", "paralysis",
+    "heavy bleeding", "bleeding heavily", "blood vomiting", "poison", "head injury",
+    "severe sweating", "cold sweat",
+    # Romanized Hindi / Hinglish
+    "chhati me dard", "sine me dard", "dil ka daura", "saans lene me dikkat", "saans phool",
+    "behosh", "khun ki ulti", "zehar", "chakkar aake gir", "chhati",
+    # Devanagari Hindi
+    "छाती में दर्द", "सीने में दर्द", "छाती", "सीना", "सीने", "दिल", "दौरा", "हार्ट अटैक",
+    "पसीना", "सांस", "साँस", "बेहोश", "बेहोशी", "खून", "रक्त", "लकवा", "जहर"
 ]
 
 URGENT_KEYWORDS = [
-    "high fever", "tez bukhar", "103", "102", "vomiting continuously", "ultiyan",
-    "severe stomach pain", "pet me bahut dard", "fracture", "haddi toot gayi", "baby crying",
-    "baccha ro raha hai", "dehydration"
+    # English
+    "high fever", "102", "103", "104", "persistent vomiting", "vomiting continuously",
+    "severe abdominal pain", "severe stomach pain", "fracture", "broken bone",
+    "child dehydration", "baby lethargic",
+    # Romanized Hindi / Hinglish
+    "tez bukhar", "ultiyan", "pet me bahut dard", "haddi toot", "baccha ro raha hai",
+    # Devanagari Hindi
+    "तेज बुखार", "बुखार", "उल्टी", "पेट में तेज दर्द", "हड्डी", "फ्रैक्चर", "बच्चे को बुखार"
 ]
 
 @router.post("/evaluate", response_model=TriageResponse)

@@ -1,44 +1,193 @@
 /**
  * AarogyaVoice Frontend Client Application
  * Connects to FastAPI backend, manages live appointments, call logs,
- * and handles interactive voice simulation with browser Web Speech.
+ * and handles interactive two-way voice talk with Web Speech STT and TTS.
  */
 
 let ttsEnabled = true;
+let isRecording = false;
+let recognition = null;
+let currentSessionPhone = "+919876543210";
 
 document.addEventListener("DOMContentLoaded", () => {
   fetchAppointments();
   fetchCallLogs();
 
-  // Set up periodic polling for live updates
+  // Periodic polling for appointments & call logs
   setInterval(() => {
     fetchAppointments();
     fetchCallLogs();
   }, 4000);
 
-  // Chat Form Submission
-  const form = document.getElementById("chat-form");
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const input = document.getElementById("chat-input");
-    const message = input.value.trim();
-    if (!message) return;
-    input.value = "";
-    sendChatMessage(message);
-  });
+  // Initialize Speech Recognition (Microphone Voice Input)
+  initSpeechRecognition();
 
-  // TTS Toggle Button
+  // Text Chat Form Submission
+  const form = document.getElementById("chat-form");
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const input = document.getElementById("chat-input");
+      const message = input.value.trim();
+      if (!message) return;
+      input.value = "";
+      sendChatMessage(message);
+    });
+  }
+
+  // TTS Voice Output Toggle
   const ttsBtn = document.getElementById("tts-toggle");
-  ttsBtn.addEventListener("click", () => {
-    ttsEnabled = !ttsEnabled;
-    document.getElementById("tts-label").innerText = `Voice Audio: ${ttsEnabled ? "ON" : "OFF"}`;
-    document.getElementById("tts-icon").className = ttsEnabled ? "fa-solid fa-volume-high text-emerald-400" : "fa-solid fa-volume-xmark text-slate-500";
-    if (!ttsEnabled && window.speechSynthesis) {
+  if (ttsBtn) {
+    ttsBtn.addEventListener("click", () => {
+      ttsEnabled = !ttsEnabled;
+      document.getElementById("tts-label").innerText = `Voice: ${ttsEnabled ? "ON" : "OFF"}`;
+      document.getElementById("tts-icon").className = ttsEnabled 
+        ? "fa-solid fa-volume-high text-emerald-400" 
+        : "fa-solid fa-volume-xmark text-slate-500";
+      if (!ttsEnabled && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        hideWaveform();
+      }
+    });
+  }
+});
+
+// ==============================================================================
+// Web Speech Recognition (Microphone Voice Talk)
+// ==============================================================================
+
+function initSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    console.warn("Web Speech Recognition API is not supported in this browser.");
+    const micBtn = document.getElementById("voice-talk-btn");
+    if (micBtn) {
+      micBtn.title = "Speech Recognition not supported in this browser (use Chrome or Edge).";
+    }
+    return;
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+
+  const langSelect = document.getElementById("voice-lang");
+  recognition.lang = langSelect ? langSelect.value : "en-US";
+
+  recognition.onstart = () => {
+    isRecording = true;
+    updateMicButtonUI(true);
+    showListeningIndicator();
+  };
+
+  recognition.onresult = (event) => {
+    let transcript = "";
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      transcript += event.results[i][0].transcript;
+    }
+    const input = document.getElementById("chat-input");
+    if (input) input.value = transcript;
+
+    // If final result obtained
+    if (event.results[event.results.length - 1].isFinal) {
+      recognition.stop();
+      if (transcript.trim().length > 0) {
+        sendChatMessage(transcript.trim());
+        if (input) input.value = "";
+      }
+    }
+  };
+
+  recognition.onerror = (event) => {
+    console.error("Speech recognition error:", event.error);
+    isRecording = false;
+    updateMicButtonUI(false);
+    hideListeningIndicator();
+  };
+
+  recognition.onend = () => {
+    isRecording = false;
+    updateMicButtonUI(false);
+    hideListeningIndicator();
+  };
+}
+
+function toggleVoiceRecording() {
+  if (!recognition) {
+    initSpeechRecognition();
+    if (!recognition) {
+      alert("Microphone voice recognition is supported on Google Chrome, Microsoft Edge, and Safari. Please use a supported browser.");
+      return;
+    }
+  }
+
+  if (isRecording) {
+    recognition.stop();
+    isRecording = false;
+    updateMicButtonUI(false);
+    hideListeningIndicator();
+  } else {
+    // Stop any ongoing speech before listening
+    if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
       hideWaveform();
     }
-  });
-});
+    const langSelect = document.getElementById("voice-lang");
+    if (langSelect) {
+      recognition.lang = langSelect.value;
+    }
+    try {
+      recognition.start();
+    } catch (e) {
+      console.warn("Recognition already started:", e);
+    }
+  }
+}
+
+function updateMicButtonUI(active) {
+  const btn = document.getElementById("voice-talk-btn");
+  const icon = document.getElementById("mic-btn-icon");
+  const text = document.getElementById("mic-btn-text");
+  const headerBtn = document.getElementById("header-call-btn");
+  const headerIcon = document.getElementById("header-call-icon");
+  const headerText = document.getElementById("header-call-text");
+
+  if (active) {
+    if (btn) {
+      btn.className = "w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 animate-pulse cursor-pointer";
+    }
+    if (icon) icon.className = "fa-solid fa-microphone-lines text-base animate-bounce";
+    if (text) text.innerText = "Listening to you... Click to Stop";
+
+    if (headerBtn) headerBtn.className = "px-3.5 py-1.5 rounded-xl bg-red-600 text-white text-xs font-bold flex items-center gap-2 transition animate-pulse";
+    if (headerIcon) headerIcon.className = "fa-solid fa-phone-slash";
+    if (headerText) headerText.innerText = "End Call";
+  } else {
+    if (btn) {
+      btn.className = "w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 transition bg-emerald-500 hover:bg-emerald-600 text-slate-950 shadow-lg shadow-emerald-500/20 cursor-pointer";
+    }
+    if (icon) icon.className = "fa-solid fa-microphone text-base";
+    if (text) text.innerText = "Click to Talk (Microphone)";
+
+    if (headerBtn) headerBtn.className = "px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 text-slate-950 text-xs font-bold flex items-center gap-2 transition shadow-md shadow-emerald-500/20";
+    if (headerIcon) headerIcon.className = "fa-solid fa-phone";
+    if (headerText) headerText.innerText = "Start Voice Talk";
+  }
+}
+
+function showListeningIndicator() {
+  const el = document.getElementById("listening-indicator");
+  if (el) el.classList.remove("hidden");
+}
+
+function hideListeningIndicator() {
+  const el = document.getElementById("listening-indicator");
+  if (el) el.classList.add("hidden");
+}
+
+// ==============================================================================
+// Chat & Communication Engine
+// ==============================================================================
 
 function sendQuickPrompt(promptText) {
   sendChatMessage(promptText);
@@ -51,7 +200,11 @@ async function sendChatMessage(message) {
     const res = await fetch("/api/simulator/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: message })
+      body: JSON.stringify({
+        message: message,
+        caller_phone: currentSessionPhone,
+        preferred_language: document.getElementById("voice-lang")?.value.startsWith("hi") ? "hi" : "en"
+      })
     });
 
     if (res.ok) {
@@ -59,13 +212,13 @@ async function sendChatMessage(message) {
       appendAgentMessage(data);
 
       if (ttsEnabled && data.reply) {
-        speakResponse(data.reply);
+        speakResponse(data.reply, data.language || "en");
       }
 
       // Refresh appointments and logs immediately if action occurred
       if (data.action_taken) {
-        setTimeout(fetchAppointments, 500);
-        setTimeout(fetchCallLogs, 500);
+        setTimeout(fetchAppointments, 400);
+        setTimeout(fetchCallLogs, 400);
       }
     } else {
       appendSystemMessage("Error reaching agent server. Please make sure the backend is running.");
@@ -75,12 +228,44 @@ async function sendChatMessage(message) {
   }
 }
 
+function resetConversation() {
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+    hideWaveform();
+  }
+  if (isRecording && recognition) {
+    recognition.stop();
+  }
+
+  fetch("/api/simulator/reset", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "reset", caller_phone: currentSessionPhone })
+  });
+
+  const box = document.getElementById("chat-box");
+  if (box) {
+    box.innerHTML = `
+      <div class="flex items-start gap-2.5 text-xs text-slate-400">
+        <div class="h-6 w-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-user-doctor text-xs"></i>
+        </div>
+        <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl rounded-tl-none text-slate-200 space-y-1">
+          <p class="font-medium text-white">Hello! Welcome to Sanjeevani Community Health Center. I am Dr. Priya.</p>
+          <p class="text-xs text-slate-400">How can I assist you or your family with your health, symptoms, or doctor appointments today?</p>
+          <p class="text-[11px] text-slate-500 italic mt-1">(नमस्ते! आप हिंदी या English किसी में भी बात कर सकते हैं।)</p>
+        </div>
+      </div>
+    `;
+  }
+}
+
 function appendUserMessage(text) {
   const box = document.getElementById("chat-box");
   const div = document.createElement("div");
   div.className = "flex items-start justify-end gap-2.5 text-xs text-slate-300";
   div.innerHTML = `
-    <div class="bg-emerald-600/20 border border-emerald-500/30 p-3 rounded-2xl rounded-tr-none text-emerald-200">
+    <div class="bg-emerald-600/25 border border-emerald-500/40 p-3 rounded-2xl rounded-tr-none text-emerald-100 max-w-[85%]">
       <p class="font-medium">${escapeHtml(text)}</p>
     </div>
     <div class="h-6 w-6 rounded-full bg-emerald-600 text-slate-950 flex items-center justify-center shrink-0 font-bold">
@@ -98,28 +283,31 @@ function appendAgentMessage(data) {
 
   let badgeHtml = "";
   if (data.triage_status === "EMERGENCY") {
-    badgeHtml = `<span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 border border-red-500/40 text-red-300">🚨 RED EMERGENCY</span>`;
+    badgeHtml = `<span class="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-500/20 border border-red-500/40 text-red-300 animate-pulse">🚨 RED EMERGENCY</span>`;
   } else if (data.triage_status === "URGENT") {
     badgeHtml = `<span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 border border-amber-500/40 text-amber-300">🟡 URGENT CARE</span>`;
   }
 
   let actionHtml = "";
   if (data.appointment_booked) {
+    const app = data.appointment_booked;
     actionHtml = `
-      <div class="mt-2 p-2 bg-slate-950/80 border border-emerald-500/30 rounded-xl text-[11px] text-emerald-300">
-        <div><b>Token #${data.appointment_booked.token} Confirmed!</b></div>
-        <div>${escapeHtml(data.appointment_booked.doctor_name)} @ ${escapeHtml(data.appointment_booked.slot_time)}</div>
-        <div class="text-[10px] text-slate-400 mt-1">📱 WhatsApp slip dispatched</div>
+      <div class="mt-2 p-2.5 bg-slate-950/90 border border-emerald-500/40 rounded-xl text-[11px] text-emerald-300 space-y-0.5">
+        <div class="font-bold text-xs text-emerald-400">🎟️ Token #${app.token_number} Confirmed</div>
+        <div>${escapeHtml(app.doctor_name)} • ${escapeHtml(app.slot_time)}</div>
+        <div class="text-[10px] text-slate-400 flex items-center gap-1 mt-1">
+          <i class="fa-brands fa-whatsapp text-emerald-400"></i> WhatsApp slip & directions dispatched
+        </div>
       </div>
     `;
   }
 
   div.innerHTML = `
     <div class="h-6 w-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-      <i class="fa-solid fa-robot text-xs"></i>
+      <i class="fa-solid fa-user-doctor text-xs"></i>
     </div>
-    <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl rounded-tl-none text-slate-200 space-y-1 max-w-[85%]">
-      <p>${escapeHtml(data.reply)}</p>
+    <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl rounded-tl-none text-slate-200 space-y-1.5 max-w-[85%]">
+      <p class="leading-relaxed">${escapeHtml(data.reply)}</p>
       ${badgeHtml}
       ${actionHtml}
     </div>
@@ -137,24 +325,51 @@ function appendSystemMessage(text) {
   box.scrollTop = box.scrollHeight;
 }
 
-function speakResponse(text) {
+// ==============================================================================
+// Voice Synthesis (TTS Voice Output)
+// ==============================================================================
+
+function speakResponse(text, lang) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
 
   showWaveform();
 
-  const cleanText = text.replace(/[🚨🔴🟡🟢✅]/g, "");
+  // Strip emojis for clean vocalization
+  const cleanText = text.replace(/[🚨🔴🟡🟢✅🎟️]/g, "").trim();
   const utterance = new SpeechSynthesisUtterance(cleanText);
 
-  // Try to find Hindi voice or Indian English
   const voices = window.speechSynthesis.getVoices();
-  const preferredVoice = voices.find(v => v.lang.includes("hi") || v.lang.includes("IN") || v.name.includes("India"));
-  if (preferredVoice) {
-    utterance.voice = preferredVoice;
-  }
-  utterance.rate = 1.05;
+  let selectedVoice = null;
 
-  utterance.onend = () => hideWaveform();
+  if (lang === "hi") {
+    selectedVoice = voices.find(v => v.lang.includes("hi") || v.name.includes("Hindi") || v.name.includes("Kalpana"));
+    utterance.lang = "hi-IN";
+  } else {
+    // English Indian or British / Natural English
+    selectedVoice = voices.find(v => v.lang.includes("en-IN") || v.name.includes("India") || v.name.includes("Neerja") || v.name.includes("Ravi"));
+    if (!selectedVoice) {
+      selectedVoice = voices.find(v => v.lang.startsWith("en"));
+    }
+    utterance.lang = "en-IN";
+  }
+
+  if (selectedVoice) {
+    utterance.voice = selectedVoice;
+  }
+  utterance.rate = 1.02;
+
+  utterance.onend = () => {
+    hideWaveform();
+    // Hands-Free Auto-Listen: if caller has Hands-Free mode enabled, start listening automatically!
+    const handsFree = document.getElementById("hands-free-toggle")?.checked;
+    if (handsFree && recognition && !isRecording) {
+      setTimeout(() => {
+        toggleVoiceRecording();
+      }, 600);
+    }
+  };
+
   utterance.onerror = () => hideWaveform();
 
   window.speechSynthesis.speak(utterance);
@@ -169,6 +384,10 @@ function hideWaveform() {
   const wf = document.getElementById("waveform");
   if (wf) wf.classList.add("hidden");
 }
+
+// ==============================================================================
+// Live Data Polling (Appointments & Call Logs)
+// ==============================================================================
 
 async function fetchAppointments() {
   try {
@@ -215,9 +434,10 @@ async function fetchAppointments() {
       `;
     }).join("");
 
-    // Update KPI counter
-    document.getElementById("stat-bookings").innerText = items.length;
-    document.getElementById("stat-whatsapp").innerText = items.length;
+    const statBookings = document.getElementById("stat-bookings");
+    const statWhatsapp = document.getElementById("stat-whatsapp");
+    if (statBookings) statBookings.innerText = items.length;
+    if (statWhatsapp) statWhatsapp.innerText = items.length;
   } catch (e) {
     console.error("Error fetching appointments:", e);
   }
@@ -257,7 +477,8 @@ async function fetchCallLogs() {
       `;
     }).join("");
 
-    document.getElementById("stat-calls").innerText = 140 + calls.length;
+    const statCalls = document.getElementById("stat-calls");
+    if (statCalls) statCalls.innerText = 140 + calls.length;
   } catch (e) {
     console.error("Error fetching call logs:", e);
   }
